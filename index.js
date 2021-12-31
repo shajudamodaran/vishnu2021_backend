@@ -68,8 +68,8 @@ async function getMasterData(client) {
     if (result) 
     {
 
-        console.log(result[0]);
-       return(result[0])
+        console.log(result);
+       return(result)
 
 
 
