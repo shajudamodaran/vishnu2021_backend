@@ -3,28 +3,28 @@ const app = express()
 const port = process.env.PORT || 3000
 app.use(express.json());
 
-const {MongoClient} = require('mongodb');
+const { MongoClient } = require('mongodb');
 
 const uri = 'mongodb+srv://ShajuMongodbClient:rec123@cluster0.hgqm9.mongodb.net/vishnu2021?retryWrites=true&w=majority'
-const client = new MongoClient(uri);
+const Mainclient = new MongoClient(uri);
 
 
 
-async function main(){
+async function main() {
 
   try {
-      // Connect to the MongoDB cluster
-      await client.connect();
+    // Connect to the MongoDB cluster
+    await Mainclient.connect();
 
-      // Make the appropriate DB calls
-      await  listDatabases(client);
+    // Make the appropriate DB calls
+    await listDatabases(Mainclient);
 
-      await  getMasterData(client);
+    // await  getMasterData(client);
 
   } catch (e) {
-      console.error(e);
+    console.error(e);
   } finally {
-      await client.close();
+    await Mainclient.close();
   }
 }
 
@@ -33,27 +33,82 @@ main().catch(console.error);
 
 app.get('/invoices', (req, res) => {
 
-    getMasterData(client).then((result)=>{
- 
-     if(result)
-     {
-       res.send(result)
-     }
-     else{
- 
-     }
-     res.send(`No listings found `);
- 
+  getMasterData(Mainclient).then((result) => {
+
+    if (result) {
+      res.send(result)
+    }
+    else {
+
+    }
+    res.send(`No listings found `);
+
+  })
+
+
+})
+
+app.post('/addInvoice', (req, res) => {
+
+  let { id, client, isPayd, date, total, items, discounts, tax } = req.body
+
+  if (!client) {
+    res.send("Error. Client is missing")
+  }
+  else if (items.length == 0) {
+    res.send("Error. No items in the invoice")
+  }
+  else {
+
+    addInvoice(Mainclient, req.body).then((respo) => {
+
+      res.send(respo)
+
     })
-  
- 
- })
- 
 
 
 
-async function listDatabases(client)
-{
+  }
+
+})
+
+
+app.post('/clients', (req, res) => {
+
+  let { name, address } = req.body
+
+  if (name && address) {
+
+    addClient(Mainclient, req.body).then((response) => {
+
+      res.send(response)
+    })
+
+  }
+  else {
+    res.send("Missing name or address")
+  }
+
+
+})
+
+app.get('/clients', (req, res) => {
+
+  listClients(Mainclient).then((response) => {
+
+    res.send(response)
+
+  })
+
+})
+
+
+
+
+
+
+
+async function listDatabases(client) {
   databasesList = await client.db().admin().listDatabases();
   console.log("Databases:");
   databasesList.databases.forEach(db => console.log(` - ${db.name}`));
@@ -62,30 +117,80 @@ async function listDatabases(client)
 
 async function getMasterData(client) {
 
-    await client.connect();
-    
-    const result = await client.db("vishnu2021").collection("invoices").find({}).toArray()
-    if (result) 
-    {
+  await client.connect();
 
-        console.log(result);
-       return(result)
+  const result = await client.db("vishnu2021").collection("invoices").find({}).toArray()
+  if (result) {
 
+    console.log(result);
+    return (result)
 
 
-    } else 
-    {
-        console.log(`No listings found `);
-    }
+
+  } else {
+    console.log(`No listings found `);
   }
-  
+}
 
+async function addInvoice(client, data) {
 
+  await client.connect();
 
+  let dbo = client.db("vishnu2021")
 
+  let result = await dbo.collection("invoices").insertOne(data, function (err, respo) {
+    if (err) throw err;
+    console.log("1 document inserted");
 
-app.listen(process.env.PORT || 3000, function(){
-    console.log("Express server listening on port %d in %s mode", this.address().port, app.settings.env);
+    return respo
+
   });
-  
+
+  return result
+
+}
+
+async function addClient(client, data) {
+
+  await client.connect();
+  let dbo = client.db("vishnu2021")
+
+  let result = await dbo.collection("clients").insertOne(data, function (err, respo) {
+    if (err) throw err;
+
+    console.log("1 client added");
+
+    return respo
+
+  });
+
+  return result
+
+}
+
+let listClients = async (client) => {
+
+  await client.connect();
+
+  const result = await client.db("vishnu2021").collection("clients").find({}).toArray()
+  if (result) {
+
+    console.log(result);
+    return (result)
+
+  } else {
+    console.log(`No listings found `);
+  }
+
+}
+
+
+
+
+
+
+app.listen(process.env.PORT || 3000, function () {
+  console.log("Express server listening on port %d in %s mode", this.address().port, app.settings.env);
+});
+
 
