@@ -121,6 +121,22 @@ app.get('/clients', (req, res) => {
 
 })
 
+app.post('/updateInvoice', (req, res) => {
+
+  if (!req.body.id) {
+
+ res.send("Id missing")
+  }
+  else{
+    updateInvoice(Mainclient,req.body).then((response)=>{
+
+      console.log("updated");
+      res.send(response)
+    })
+  }
+
+})
+
 
 
 
@@ -200,6 +216,27 @@ let listClients = async (client) => {
   } else {
     console.log(`No listings found `);
   }
+
+}
+
+let updateInvoice = async (client, data) => {
+
+  await client.connect();
+  let dbo = client.db("vishnu2021")
+
+  var myquery = { id: data.id };
+  var newvalues = { $set: data };
+
+ console.log(myquery);
+
+
+  dbo.collection("invoices").updateOne(myquery, newvalues, function (err, res) {
+    if (err) throw err;
+    console.log("1 document updated");
+    return res
+
+  });
+
 
 }
 
